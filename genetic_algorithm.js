@@ -2,25 +2,53 @@
 const POPULATION_SIZE = 100;
 const MAX_GENERATIONS = 100;
 const MUTATION_RATE = 0.01;
-const MIN_X = -15;
-const MAX_X = 15;
+const MAX_WEIGHT = 15;
 
-// Function to Optimize
-function fitnessFunction(x) {
-    return x * x * x + 7 * x * x - 4 * x + 3;
+// Item Definition
+class Item {
+  constructor(weight, value) {
+    this.weight = weight;
+    this.value = value;
+  }
+}
+
+// Knapsack Problem Setup
+const items = [
+  new Item(2, 12),
+  new Item(4, 10),
+  new Item(6, 15),
+  new Item(2, 7),
+  new Item(3, 8),
+  new Item(5, 11)
+];
+const numItems = items.length;
+
+// Individual Representation
+class Individual {
+  constructor() {
+    this.genes = [];
+    for (let i = 0; i < numItems; i++) {
+      this.genes[i] = Math.random() < 0.5 ? 0 : 1; // Initialize with random binary genes
+    }
+    this.fitness = this.calculateFitness();
+  }
+
+  calculateFitness() {
+    let totalWeight = 0;
+    let totalValue = 0;
+    for (let i = 0; i < numItems; i++) {
+      if (this.genes[i] === 1) {
+        totalWeight += items[i].weight;
+        totalValue += items[i].value;
+      }
+    }
+    return (totalWeight <= MAX_WEIGHT) ? totalValue : 0;
+  }
 }
 
 // Generate Random Number within a Range
 function randomInRange(min, max) {
   return Math.random() * (max - min) + min;
-}
-
-// Individual Representation
-class Individual {
-    constructor() {
-      this.x = randomInRange(MIN_X, MAX_X); // Initialize with random value within the given range
-      this.fitness = fitnessFunction(this.x);
-    }
 }
 
 // Generate Initial Population
@@ -48,24 +76,19 @@ function rouletteWheelSelection(population) {
 // Crossover (Single-Point)
 function crossover(parent1, parent2) {
   const offspring = new Individual();
-  const crossoverPoint = Math.floor(Math.random() * (String(parent1.x).length - 1)) + 1;
-  const parent1Binary = String(parent1.x).split('');
-  const parent2Binary = String(parent2.x).split('');
-  const offspringBinary = parent1Binary.slice(0, crossoverPoint).concat(parent2Binary.slice(crossoverPoint));
-  offspring.x = parseFloat(offspringBinary.join(''));
+  const crossoverPoint = Math.floor(Math.random() * (parent1.genes.length - 1)) + 1;
+  offspring.genes = parent1.genes.slice(0, crossoverPoint).concat(parent2.genes.slice(crossoverPoint));
   return offspring;
 }
 
 // Mutation
 function mutate(individual) {
-  const individualBinary = String(individual.x).split('');
-  for (let i = 0; i < individualBinary.length; i++) {
+  for (let i = 0; i < individual.genes.length; i++) {
     if (Math.random() < MUTATION_RATE) {
-      individualBinary[i] = individualBinary[i] === '0' ? '1' : '0';
+      individual.genes[i] = individual.genes[i] === 0 ? 1 : 0;
     }
   }
-  individual.x = parseFloat(individualBinary.join(''));
-  individual.fitness = fitnessFunction(individual.x);
+  individual.fitness = individual.calculateFitness();
 }
 
 // Genetic Algorithm
@@ -101,5 +124,11 @@ function geneticAlgorithm() {
 
 // Run the Genetic Algorithm
 const bestSolution = geneticAlgorithm();
-console.log('Best Solution:', bestSolution.x);
+console.log('Best Solution (Gene Representation):', bestSolution.genes);
+console.log('Best Solution (Items Selected):');
+for (let i = 0; i < numItems; i++) {
+  if (bestSolution.genes[i] === 1) {
+    console.log('Item', i + 1, ': Weight', items[i].weight, ', Value', items[i].value);
+  }
+}
 console.log('Fitness:', bestSolution.fitness);
